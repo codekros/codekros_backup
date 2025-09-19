@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Option Chain Analysis - Dynamic Filter</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(135deg, #f8fafc 0%, #e0e7ef 100%);
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      min-width: 100vw;
+      height: 100vh;
+      width: 100vw;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+    }
+    .main-content {
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 0;
+      min-width: 0;
+      height: 100%;
+      width: 100vw;
+      box-sizing: border-box;
+      padding: 0 2vw;
+    }
+    h2 {
+      font-size: 1.7em;
+      margin: 0 0 28px 0;
+      text-align: center;
+      letter-spacing: 0.5px;
+      color: #1e293b;
+    }
+    .filter-area {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 18px;
+      margin-bottom: 32px;
+      width: 100%;
+      max-width: 100vw;
+      flex-wrap: wrap;
+    }
+    #filter-builder {
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 14px;
+      padding: 22px 24px 14px 24px;
+      box-shadow: 0 6px 32px 0 rgba(30,41,59,0.10), 0 1.5px 4px 0 rgba(30,41,59,0.04);
+      width: auto;
+      min-width: 320px;
+      max-width: 90vw;
+      display: flex;
+      flex-direction: row;
+      gap: 10px;
+      overflow-x: auto;
+    }
+    .add-btn {
+      margin-top: 0;
+      padding: 8px 18px;
+      font-size: 1em;
+      height: 38px;
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(30,41,59,0.08);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .add-btn:hover {
+      background: #1d4ed8;
+    }
+    #filter-btn {
+      background: #059669;
+      margin-left: 8px;
+      font-weight: 500;
+    }
+    #filter-btn:hover {
+      background: #047857;
+    }
+    #reset-btn {
+      background: #f3f4f6;
+      color: #334155;
+      margin-left: 8px;
+      font-weight: 500;
+      border: 1px solid #cbd5e1;
+      box-shadow: none;
+      transition: background 0.2s, color 0.2s;
+    }
+    #reset-btn:hover {
+      background: #e5e7eb;
+      color: #1e293b;
+    }
+    .table-area {
+      display: flex;
+      justify-content: center;
+      width: 100%;
+      margin-top: 0;
+    }
+    #stock-table {
+      border-collapse: collapse;
+      width: 100%;
+      max-width: 1100px;
+      margin: 0 auto 0 auto;
+      font-size: 1em;
+      background: #fff;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 6px 32px 0 rgba(30,41,59,0.10), 0 1.5px 4px 0 rgba(30,41,59,0.04);
+    }
+    #stock-table th, #stock-table td {
+      border: 1px solid #e0e0e0;
+      padding: 12px 16px;
+      text-align: center;
+      font-size: 1.05em;
+    }
+    #stock-table th {
+      background: #f1f5f9;
+      color: #334155;
+      font-weight: 600;
+    }
+    .filter-row {
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 0;
+      padding: 7px 0;
+      border-right: 1px solid #f1f5f9;
+      background: transparent;
+    }
+    .filter-row:last-child {
+      border-right: none;
+    }
+    .filter-controls {
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 10px;
+      align-items: center;
+    }
+    .filter-row select,
+    .filter-row input[type="text"] {
+      padding: 7px 10px;
+      font-size: 1em;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      background: #f8fafc;
+      min-width: 70px;
+    }
+    .filter-row input[type="text"] {
+      width: 90px;
+    }
+    .filter-row input[type="text"].times-input {
+      width: 75px;
+    }
+    .and-or {
+      padding: 7px 10px;
+      font-size: 1em;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      background: #f8fafc;
+    }
+    .remove-btn {
+      color: red;
+      cursor: pointer;
+      border: none;
+      background: none;
+      font-size: 20px;
+      margin-left: 4px;
+      height: 32px;
+      width: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f8fafc;
+      border: 1px solid #e0e0e0;
+      border-radius: 50%;
+      transition: background 0.2s;
+    }
+    .remove-btn:hover {
+      background: #fee2e2;
+    }
+    .warn-span {
+      color: red;
+      font-size: 0.95em;
+      margin-left: 6px;
+    }
+    #filter-builder, .table-area {
+      display: none;
+    }
+    @media (max-width: 1100px) {
+      #stock-table {
+        max-width: 100vw;
+      }
+    }
+    @media (max-width: 900px) {
+      .filter-area, .table-area {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+      }
+      #filter-builder, #stock-table {
+        width: 100%;
+        max-width: 100%;
+      }
+      .main-content {
+        padding: 0 1vw;
+      }
+    }
+    @media (max-width: 600px) {
+      #filter-builder {
+        padding: 12px 4vw 8px 4vw;
+      }
+      #stock-table th, #stock-table td {
+        padding: 7px 4px;
+        font-size: 0.95em;
+      }
+      h2 {
+        font-size: 1.1em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="main-content">
+    <h2>Option Chain Analysis - Dynamic Filter</h2>
+    <div class="filter-area">
+      <div id="filter-builder"></div>
+      <button class="add-btn" onclick="addFilterRow()">+ Add Condition</button>
+      <button class="add-btn" id="filter-btn" onclick="applyFilters()">Filter</button>
+      <button class="add-btn" id="reset-btn" onclick="resetFilters()">Reset Filters</button>
+    </div>
+    <div class="table-area">
+      <table id="stock-table">
+        <thead>
+          <tr>
+            <th>Stock</th>
+            <th>Yield</th>
+            <th>% Change</th>
+            <th>Pseudo Moves</th>
+            <th>Monthly Moves</th>
+            <th>Days to Expiry</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+<script>
+// Dummy stock data
+const stocks = [
+  { name: 'ABC', yield: 2.8, pctChange: 5.2, pseudoMoves: [{dir: 'Positive', bucket: '10%', count: 8, expiry: 30}], monthlyMoves: [{dir: 'Negative', bucket: '15%', count: 3, expiry: 30}], daysToExpiry: 30 },
+  { name: 'XYZ', yield: 1.9, pctChange: -2.1, pseudoMoves: [{dir: 'Positive', bucket: '5%', count: 4, expiry: 15}], monthlyMoves: [{dir: 'Positive', bucket: '25%+', count: 1, expiry: 15}], daysToExpiry: 15 },
+  { name: 'DEF', yield: 3.5, pctChange: 7.0, pseudoMoves: [{dir: 'Negative', bucket: '20%', count: 2, expiry: 45}], monthlyMoves: [{dir: 'Negative', bucket: '10%', count: 5, expiry: 45}], daysToExpiry: 45 },
+  // Add more as needed
+];
+
+const metricOptions = [
+  { value: 'yield', label: 'Yield' },
+  { value: 'pctChange', label: '% Change' },
+  { value: 'pseudoMoves', label: 'Pseudo Moves' },
+  { value: 'monthlyMoves', label: 'Monthly Moves' },
+];
+const operatorOptions = [
+  { value: '>', label: '> (greater than)' },
+  { value: '<', label: '< (less than)' },
+  { value: '>=', label: '>= (greater or equal)' },
+  { value: '<=', label: '<= (less or equal)' },
+  { value: '=', label: '= (equal to)' },
+];
+const moveDirections = [
+  { value: 'Positive', label: 'Positive' },
+  { value: 'Negative', label: 'Negative' },
+];
+const moveBuckets = [
+  '5%', '10%', '15%', '20%', '25%', '25%+'
+];
+const expiryContexts = [15, 30, 45];
+
+let filters = [];
+
+function addFilterRow() {
+  const filterBuilder = document.getElementById('filter-builder');
+  const tableArea = document.querySelector('.table-area');
+
+  if (filters.length === 0) {
+    filterBuilder.style.display = 'flex';
+    tableArea.style.display = 'flex';
+  }
+
+  filters.push({ metric: 'yield', operator: '>', value: '', connector: 'AND' });
+  renderFilterBuilder();
+  // Do not call applyFilters() automatically
+}
+
+function removeFilterRow(idx) {
+  filters.splice(idx, 1);
+  renderFilterBuilder();
+  if (filters.length === 0) {
+    document.getElementById('filter-builder').style.display = 'none';
+    document.querySelector('.table-area').style.display = 'none';
+  }
+}
+
+function updateFilter(idx, key, value) {
+  filters[idx][key] = value;
+  // Reset dependent fields if metric changes
+  if (key === 'metric') {
+    if (value === 'yield' || value === 'pctChange') {
+      filters[idx] = { metric: value, operator: '>', value: '', connector: filters[idx].connector };
+    } else {
+      filters[idx] = { metric: value, moveDir: 'Positive', bucketFrom: '5%', bucketTo: '25%', operator: '>', value: '', expiry: 15, connector: filters[idx].connector };
+    }
+    renderFilterBuilder();
+  }
+  // Do not call applyFilters() automatically
+}
+
+function renderFilterBuilder() {
+  const builder = document.getElementById('filter-builder');
+  builder.innerHTML = '';
+  filters.forEach((filter, idx) => {
+    const row = document.createElement('div');
+    row.className = 'filter-row';
+    // AND/OR connector (not for first row)
+    if (idx > 0) {
+      const connector = document.createElement('select');
+      connector.className = 'and-or';
+      ['AND', 'OR'].forEach(op => {
+        const opt = document.createElement('option');
+        opt.value = op; opt.textContent = op;
+        if (filter.connector === op) opt.selected = true;
+        connector.appendChild(opt);
+      });
+      connector.onchange = e => updateFilter(idx, 'connector', e.target.value);
+      row.appendChild(connector);
+    }
+    // Metric dropdown
+    const metricSel = document.createElement('select');
+    metricSel.className = '';
+    metricOptions.forEach(opt => {
+      const o = document.createElement('option');
+      o.value = opt.value; o.textContent = opt.label;
+      if (filter.metric === opt.value) o.selected = true;
+      metricSel.appendChild(o);
+    });
+    metricSel.onchange = e => updateFilter(idx, 'metric', e.target.value);
+    row.appendChild(metricSel);
+    // Dynamic controls
+    const controls = document.createElement('span');
+    controls.className = 'filter-controls';
+    if (filter.metric === 'yield' || filter.metric === 'pctChange') {
+      // Operator
+      const opSel = document.createElement('select');
+      opSel.className = '';
+      operatorOptions.forEach(opt => {
+        const o = document.createElement('option');
+        o.value = opt.value; o.textContent = opt.label;
+        if (filter.operator === opt.value) o.selected = true;
+        opSel.appendChild(o);
+      });
+      opSel.onchange = e => updateFilter(idx, 'operator', e.target.value);
+      controls.appendChild(opSel);
+      // Value
+      const valInput = document.createElement('input');
+      valInput.type = 'text';
+      valInput.inputMode = 'decimal';
+      valInput.pattern = '[0-9]*[.,]?[0-9]*';
+      valInput.value = filter.value;
+      valInput.placeholder = 'Value';
+      valInput.className = '';
+      // Warning span
+      const warnSpan = document.createElement('span');
+      warnSpan.className = 'warn-span';
+      warnSpan.textContent = '';
+      valInput.oninput = e => {
+        const v = e.target.value;
+        updateFilter(idx, 'value', v);
+        if (v !== '' && isNaN(parseFloat(v))) {
+          warnSpan.textContent = 'Enter a valid number';
+        } else {
+          warnSpan.textContent = '';
+        }
+      };
+      controls.appendChild(valInput);
+      controls.appendChild(warnSpan);
+    } else {
+      // Move direction
+      const dirSel = document.createElement('select');
+      dirSel.className = '';
+      moveDirections.forEach(opt => {
+        const o = document.createElement('option');
+        o.value = opt.value; o.textContent = opt.label;
+        if (filter.moveDir === opt.value) o.selected = true;
+        dirSel.appendChild(o);
+      });
+      dirSel.onchange = e => updateFilter(idx, 'moveDir', e.target.value);
+      controls.appendChild(dirSel);
+      // Bucket From
+      const bucketFromSel = document.createElement('select');
+      moveBuckets.forEach(b => {
+        const o = document.createElement('option');
+        o.value = b; o.textContent = 'From ' + b;
+        if (filter.bucketFrom === b) o.selected = true;
+        bucketFromSel.appendChild(o);
+      });
+      bucketFromSel.onchange = e => updateFilter(idx, 'bucketFrom', e.target.value);
+      controls.appendChild(bucketFromSel);
+      // Bucket To
+      const bucketToSel = document.createElement('select');
+      moveBuckets.forEach(b => {
+        const o = document.createElement('option');
+        o.value = b; o.textContent = 'To ' + b;
+        if (filter.bucketTo === b) o.selected = true;
+        bucketToSel.appendChild(o);
+      });
+      bucketToSel.onchange = e => updateFilter(idx, 'bucketTo', e.target.value);
+      controls.appendChild(bucketToSel);
+      // Operator
+      const opSel = document.createElement('select');
+      opSel.className = '';
+      operatorOptions.forEach(opt => {
+        const o = document.createElement('option');
+        o.value = opt.value; o.textContent = opt.label;
+        if (filter.operator === opt.value) o.selected = true;
+        opSel.appendChild(o);
+      });
+      opSel.onchange = e => updateFilter(idx, 'operator', e.target.value);
+      controls.appendChild(opSel);
+      // Value (times)
+      const valInput = document.createElement('input');
+      valInput.type = 'text';
+      valInput.inputMode = 'decimal';
+      valInput.pattern = '[0-9]*[.,]?[0-9]*';
+      valInput.value = filter.value;
+      valInput.placeholder = 'Times';
+      valInput.className = 'times-input';
+      // Warning span
+      const warnSpan = document.createElement('span');
+      warnSpan.className = 'warn-span';
+      warnSpan.textContent = '';
+      valInput.oninput = e => {
+        const v = e.target.value;
+        updateFilter(idx, 'value', v);
+        if (v !== '' && isNaN(parseFloat(v))) {
+          warnSpan.textContent = 'Enter a valid number';
+        } else {
+          warnSpan.textContent = '';
+        }
+      };
+      controls.appendChild(valInput);
+      controls.appendChild(warnSpan);
+      // Expiry context
+      // REMOVE expirySel for pseudoMoves/monthlyMoves
+    }
+    row.appendChild(controls);
+    // Remove button
+    if (filters.length > 1) {
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'remove-btn';
+      removeBtn.innerHTML = '×';
+      removeBtn.onclick = () => removeFilterRow(idx);
+      row.appendChild(removeBtn);
+    }
+    builder.appendChild(row);
+  });
+}
+
+function applyFilters() {
+  const tbody = document.querySelector('#stock-table tbody');
+  tbody.innerHTML = '';
+  stocks.forEach(stock => {
+    let result = evaluateFilters(stock);
+    if (result) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${stock.name}</td><td>${stock.yield}</td><td>${stock.pctChange}</td><td>${JSON.stringify(stock.pseudoMoves)}</td><td>${JSON.stringify(stock.monthlyMoves)}</td><td>${stock.daysToExpiry}</td>`;
+      tbody.appendChild(tr);
+    }
+  });
+}
+
+function evaluateFilters(stock) {
+  let res = null;
+  for (let i = 0; i < filters.length; ++i) {
+    const f = filters[i];
+    let match = false;
+    if (f.metric === 'yield' || f.metric === 'pctChange') {
+      const val = f.metric === 'yield' ? stock.yield : stock.pctChange;
+      match = compare(val, f.operator, parseFloat(f.value));
+    } else {
+      // pseudoMoves or monthlyMoves
+      const arr = f.metric === 'pseudoMoves' ? stock.pseudoMoves : stock.monthlyMoves;
+      // Find bucket range indices
+      const fromIdx = moveBuckets.indexOf(f.bucketFrom);
+      const toIdx = moveBuckets.indexOf(f.bucketTo);
+      if (fromIdx === -1 || toIdx === -1) {
+        match = false;
+      } else {
+        const minIdx = Math.min(fromIdx, toIdx);
+        const maxIdx = Math.max(fromIdx, toIdx);
+        // Check if any bucket in range matches the operator/threshold
+        let anyMatch = false;
+        for (let idx = minIdx; idx <= maxIdx; ++idx) {
+          const b = moveBuckets[idx];
+          const found = arr.find(m => m.dir === f.moveDir && m.bucket === b);
+          const count = found ? found.count : 0;
+          if (compare(count, f.operator, parseFloat(f.value))) {
+            anyMatch = true;
+            break;
+          }
+        }
+        match = anyMatch;
+      }
+    }
+    if (i === 0) {
+      res = match;
+    } else {
+      if (filters[i].connector === 'AND') res = res && match;
+      else res = res || match;
+    }
+  }
+  return res;
+}
+
+function compare(a, op, b) {
+  if (isNaN(b)) return true; // If no value entered, ignore filter
+  switch (op) {
+    case '>': return a > b;
+    case '<': return a < b;
+    case '>=': return a >= b;
+    case '<=': return a <= b;
+    case '=': return a === b;
+    default: return true;
+  }
+}
+
+function resetFilters() {
+  filters = [];
+  renderFilterBuilder();
+  applyFilters();
+  document.getElementById('filter-builder').style.display = 'none';
+  document.querySelector('.table-area').style.display = 'none';
+  // Clear any warning messages
+  setTimeout(() => {
+    document.querySelectorAll('.warn-span').forEach(span => span.textContent = '');
+    // Optionally, focus the first input
+    const firstInput = document.querySelector('.filter-row input[type="text"]');
+    if (firstInput) firstInput.value = '';
+  }, 0);
+}
+
+// Initial render - no longer needed as filters are hidden initially
+// renderFilterBuilder();
+// applyFilters();
+</script>
+</body>
+</html>
